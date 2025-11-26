@@ -6,26 +6,41 @@ from app.llm_base import LLMClient
 
 
 class HuggingFaceLLM(LLMClient):
-    def __init__(self, model_name: str = None):
+    """
+    Cliente para o Hugging Face Router usando a API de chat completions,
+    compatível com o formato OpenAI.
 
+    Modelo padrão:
+      meta-llama/Llama-3.1-8B-Instruct:cerebras
+
+    Você ainda pode sobrescrever via HUGGINGFACE_MODEL se quiser.
+    """
+
+    def __init__(self, model_name: str = None):
         self.api_key = os.getenv("HUGGINGFACE_API_KEY")
         if not self.api_key:
             raise RuntimeError(
-                "HUGGINGFACE_API_KEY não encontrada nas variáveis de ambiente"
+                "HUGGINGFACE_API_KEY não encontrada nas variáveis de ambiente."
             )
 
+        # modelo padrão já definido em código
         self.model_name = model_name or os.getenv(
-            "HUGGINGFACE_MODEL", "microsoft/Phi-3-mini-4k-instruct"
+            "HUGGINGFACE_MODEL",
+            "meta-llama/Llama-3.1-8B-Instruct:cerebras",
         )
 
-        self.url = f"https://router.huggingface.co/v1/inference/{self.model_name}"
+        # Endpoint do router para chat completions
+        self.url = "https://router.huggingface.co/v1/chat/completions"
 
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
 
-    def _build_prompt(self, user_prompt: str) -> str:
+    def _build_messages(self, user_prompt: str):
+        """
+        Constrói a lista de mensagens no formato de chat (OpenAI-like).
+        """
         system_instructions = """
 Você é o IsCoolGPT, um assistente especializado em estudos de Cloud Computing.
 
@@ -48,31 +63,29 @@ Regras de resposta:
   sugira como melhorar a pergunta.
 """
 
-        full_prompt = f"""{system_instructions}
-
---- pergunta do usuário ---
-{user_prompt}
-
---- resposta do assistente ---
-"""
-        return full_prompt.strip()
+        return [
+            {"role": "system", "content": system_instructions.strip()},
+            {"role": "user", "content": user_prompt},
+        ]
 
     async def ask(self, prompt: str) -> str:
-        final_prompt = self._build_prompt(prompt)
+        """
+        Envia uma requisição de chat completion para o Hugging Face Router.
+        """
+        messages = self._build_messages(prompt)
 
-        payload = {
-            "inputs": final_prompt,
-            "parameters": {
-                "max_new_tokens": 300,
-                "temperature": 0.6,
-            },
+        body = {
+            "model": self.model_name,
+            "messages": messages,
+            "max_tokens": 512,
+            "temperature": 0.6,
         }
 
         async with httpx.AsyncClient(timeout=40) as client:
             response = await client.post(
                 self.url,
                 headers=self.headers,
-                json=payload
+                json=body,
             )
 
         if response.status_code != 200:
@@ -83,10 +96,9 @@ Regras de resposta:
 
         data = response.json()
 
+        # Formato esperado: {"choices": [{"message": {"content": "..."}}]}
         try:
-            if isinstance(data, list) and "generated_text" in data[0]:
-                return data[0]["generated_text"]
+            return data["choices"][0]["message"]["content"]
         except Exception:
-            pass
-
-        return str(data)
+            # fallback útil pra debug se o formato mudar
+            return str(data)
