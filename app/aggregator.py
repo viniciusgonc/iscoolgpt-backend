@@ -9,8 +9,7 @@ from app.llm_base import LLMClient
 
 from app.llms.huggingface_llm import HuggingFaceLLM
 from app.llms.gemini_llm import GeminiLLM
-from app.llms.deepseek_chat_llm import DeepSeekChatLLM
-from app.llms.deepseek_reasoner_llm import DeepSeekReasonerLLM
+from app.llms.gemini_reasoner_llm import GeminiReasonerLLM
 
 logger = logging.getLogger("iscoolgpt.aggregator")
 
@@ -21,20 +20,18 @@ logger = logging.getLogger("iscoolgpt.aggregator")
 LLM_FACTORIES: Dict[str, Callable[[], LLMClient]] = {
     "huggingface": HuggingFaceLLM,
     "gemini": GeminiLLM,
-    "deepseek": DeepSeekChatLLM,  # deepseek modo CHAT
 }
 
 
 # ------------------------------------------------------
-# Função principal — agora com modo FUSION
+# Função principal — agora com modo FUSION (Gemini + HF + GeminiReasoner)
 # ------------------------------------------------------
 async def aggregate_answers(question: str, providers: List[str]) -> AggregatedResponse:
     """
-    Agora suporta 4 modos:
+    Suporta 3 modos:
       - ["gemini"]
       - ["huggingface"]
-      - ["deepseek"]
-      - ["fusion"]  → Gemini + HF + DeepSeek-R1 (síntese final)
+      - ["fusion"]  → Gemini + HF + Gemini Reasoner (síntese final)
     """
 
     # --------------------------------------------------
@@ -77,13 +74,16 @@ async def aggregate_answers(question: str, providers: List[str]) -> AggregatedRe
             logger.exception(
                 f"[Aggregator] Erro ao chamar provider '{provider_name}': {result}"
             )
-            text = f"[ERRO no provider '{provider_name}'] {type(result).__name__}: {result}"
+            text = (
+                f"[ERRO no provider '{provider_name}'] "
+                f"{type(result).__name__}: {result}"
+            )
         else:
             text = result
 
         answers.append(ProviderAnswer(provider=provider_name, answer=text))
 
-    # Final answer simples (sem razão)
+    # Final answer simples (sem reasoner)
     final_answer = "\n".join(
         [f"{ans.provider.upper()}: {ans.answer}" for ans in answers]
     )
@@ -99,12 +99,12 @@ async def _run_fusion_mode(question: str) -> AggregatedResponse:
     Executa:
       - Gemini
       - HuggingFace
-    E depois usa DeepSeek-R1 para sintetizar.
+    E depois usa GeminiReasonerLLM para sintetizar.
     """
 
     gemini = GeminiLLM()
     hf = HuggingFaceLLM()
-    reasoner = DeepSeekReasonerLLM()
+    reasoner = GeminiReasonerLLM()
 
     # 1. Rodar Gemini e HF em paralelo
     gemini_task = gemini.ask(question)
@@ -134,17 +134,17 @@ async def _run_fusion_mode(question: str) -> AggregatedResponse:
 
     answers_list.append(ProviderAnswer(provider="huggingface", answer=h_text))
 
-    # 2. Rodar DeepSeek-R1 (síntese)
+    # 2. Rodar Gemini Reasoner (síntese)
     try:
         final_answer = await reasoner.synthesize(
             question,
             g_text,
-            h_text
+            h_text,
         )
     except Exception as e:
-        logger.exception(f"[Fusion] Erro no DeepSeek Reasoner: {e}")
+        logger.exception(f"[Fusion] Erro no Gemini Reasoner: {e}")
         final_answer = (
-            "[ERRO DeepSeek Reasoner] "
+            "[ERRO Reasoner Gemini] "
             f"{type(e).__name__}: {e}"
         )
 

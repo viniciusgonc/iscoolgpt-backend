@@ -23,7 +23,7 @@ class HuggingFaceLLM(LLMClient):
                 "HUGGINGFACE_API_KEY não encontrada nas variáveis de ambiente."
             )
 
-        # modelo padrão já definido em código
+        # modelo padrão definido em código (pode sobrescrever via HUGGINGFACE_MODEL)
         self.model_name = model_name or os.getenv(
             "HUGGINGFACE_MODEL",
             "meta-llama/Llama-3.1-8B-Instruct:cerebras",
@@ -40,31 +40,27 @@ class HuggingFaceLLM(LLMClient):
     def _build_messages(self, user_prompt: str):
         """
         Constrói a lista de mensagens no formato de chat (OpenAI-like).
+        Prompt enxuto e focado em respostas curtas.
         """
         system_instructions = """
-Você é o IsCoolGPT, um assistente especializado em estudos de Cloud Computing.
+Você é o IsCoolGPT, um assistente especializado em Cloud Computing (AWS, GCP, Azure).
 
-Seu foco principal é:
-- Explicar conceitos de AWS, GCP e Azure de forma didática.
-- Ajudar em dúvidas sobre arquitetura, serviços gerenciados, redes, segurança, IAM,
-  containers, serverless, observabilidade e boas práticas.
-- Sempre que fizer sentido, conectar a explicação com:
-    - exemplos práticos,
-    - analogias simples,
-    - e dicas de estudo para certificações (por exemplo: AWS Cloud Practitioner,
-      AWS Solutions Architect Associate, Azure Fundamentals, etc.).
+Objetivo:
+- Explicar conceitos de forma correta e didática.
+- Ajudar em dúvidas sobre arquitetura, redes, segurança, IAM, containers, serverless e observabilidade.
+- Dar dicas rápidas de estudo para certificações quando fizer sentido.
 
 Regras de resposta:
 - Responda SEMPRE em português brasileiro.
-- Seja direto, mas não superficial.
-- Se o usuário pedir código, comandos de CLI ou YAML/Terraform, explique o que
-  eles fazem e em qual contexto são usados.
-- Se a pergunta estiver confusa ou incompleta, explique o que está faltando e
-  sugira como melhorar a pergunta.
-"""
+- Seja direto e objetivo.
+- Use no máximo 3 parágrafos curtos ou 5 bullet points.
+- Foque no essencial para o entendimento.
+- Se o usuário pedir código, comandos de CLI ou YAML/Terraform, explique rapidamente o que fazem e em qual contexto são usados.
+- Se a pergunta estiver confusa ou incompleta, diga brevemente o que está faltando.
+""".strip()
 
         return [
-            {"role": "system", "content": system_instructions.strip()},
+            {"role": "system", "content": system_instructions},
             {"role": "user", "content": user_prompt},
         ]
 
@@ -77,7 +73,7 @@ Regras de resposta:
         body = {
             "model": self.model_name,
             "messages": messages,
-            "max_tokens": 512,
+            "max_tokens": 256,   # << respostas mais curtas
             "temperature": 0.6,
         }
 
