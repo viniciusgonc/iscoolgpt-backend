@@ -7,7 +7,7 @@ from app.llm_base import LLMClient
 
 class HuggingFaceLLM(LLMClient):
     def __init__(self, model_name: str = None):
-        
+
         self.api_key = os.getenv("HUGGINGFACE_API_KEY")
         if not self.api_key:
             raise RuntimeError(
@@ -15,10 +15,10 @@ class HuggingFaceLLM(LLMClient):
             )
 
         self.model_name = model_name or os.getenv(
-            "HUGGINGFACE_MODEL", "microsoft/Phi-3-mini-128k-instruct"
+            "HUGGINGFACE_MODEL", "microsoft/Phi-3-mini-4k-instruct"
         )
 
-        self.url = f"https://api-inference.huggingface.co/models/{self.model_name}"
+        self.url = f"https://router.huggingface.co/v1/inference/{self.model_name}"
 
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -65,7 +65,6 @@ Regras de resposta:
             "parameters": {
                 "max_new_tokens": 300,
                 "temperature": 0.6,
-                # "return_full_text": False  
             },
         }
 

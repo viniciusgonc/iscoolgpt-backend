@@ -8,7 +8,7 @@ from app.llm_base import LLMClient
 class DeepSeekChatLLM(LLMClient):
     """
     Modo chatbot normal (similar ao Gemini/HF).
-    Modelo: deepseek-chat
+    Aqui usamos um modelo de chat/coder do DeepSeek.
     """
 
     def __init__(self, model_name: str = None):
@@ -16,8 +16,9 @@ class DeepSeekChatLLM(LLMClient):
         if not self.api_key:
             raise RuntimeError("DEEPSEEK_API_KEY não foi encontrada no ambiente.")
 
+        # modelo padrão ajustado; você pode sobrescrever via DEEPSEEK_CHAT_MODEL
         self.model_name = model_name or os.getenv(
-            "DEEPSEEK_CHAT_MODEL", "deepseek-chat"
+            "DEEPSEEK_CHAT_MODEL", "deepseek-coder"
         )
 
         self.url = "https://api.deepseek.com/chat/completions"
@@ -27,7 +28,6 @@ class DeepSeekChatLLM(LLMClient):
             "Content-Type": "application/json",
         }
 
-    # prompt igual ao Gemini
     def _build_prompt(self, user_prompt: str) -> str:
         system_instructions = """
 Você é o IsCoolGPT, um assistente especializado em estudos de Cloud Computing.
@@ -71,7 +71,12 @@ Regras de resposta:
             )
 
         if response.status_code != 200:
-            return f"[ERRO DeepSeek-Chat] {response.status_code}: {response.text[:200]}"
+            # aqui mantemos o erro visível para debug,
+            # mas a API não quebra
+            return (
+                f"[ERRO DeepSeek-Chat] {response.status_code}: "
+                f"{response.text[:200]}"
+            )
 
         data = response.json()
 
