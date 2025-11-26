@@ -5,3 +5,4 @@ httpx
 python-dotenv
 google-generativeai>=0.7.0
 anyio
+pytest-asyncio
