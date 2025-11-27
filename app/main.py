@@ -1,14 +1,39 @@
 # app/main.py
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from app.schemas import QuestionRequest, AggregatedResponse
 from app.aggregator import aggregate_answers
 
 app = FastAPI(
     title="IsCoolGPT - Multi LLM API",
-    description="API que conulta múltiplas LLMs e gera um resposta final agregada",
-    version="1.0.0"
+    version="1.0.0",
+    description="API que consulta múltiplas LLMs e gera uma resposta final agregada",
 )
+
+# ---------------------------------------------------------
+# 🚀 CORS liberado para rodar o front local e em produção
+# ---------------------------------------------------------
+origins = [
+    "http://localhost:5173",   # front local com Vite
+    "https://localhost:5173",  # (caso rode com https local)
+    
+    # depois você adiciona o domínio final, exemplo:
+    # "https://app.iscoolgpt.com",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ---------------------------------------------------------
+# Rotas
+# ---------------------------------------------------------
 
 @app.get("/health")
 async def health():
@@ -16,14 +41,7 @@ async def health():
 
 
 @app.post("/ask", response_model=AggregatedResponse)
-async def ask_question(request: QuestionRequest):
-    try:
-        result = await aggregate_answers(request.question, request.providers)
-        return result
-    except ValueError as e:
-        #caso utuário envia provider inválido
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        # Erro qualquer inesperado
-        raise HTTPException(status_code=500, detail="Erro interno no servidor")
-    
+async def ask(payload: QuestionRequest):
+    # processa tudo normalmente
+    result = await aggregate_answers(payload.question, payload.providers)
+    return result
