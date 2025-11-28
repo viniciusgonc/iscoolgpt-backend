@@ -18,7 +18,7 @@ app = FastAPI(
 origins = [
     "http://localhost:5173",   # front local com Vite
     "https://localhost:5173",
-    "http://frontend-iscoolgpt.s3-website-us-east-1.amazonaws.com/"  # (caso rode com https local)
+    "http://frontend-iscoolgpt.s3-website-us-east-1.amazonaws.com"  # (caso rode com https local)
     
     # depois você adiciona o domínio final, exemplo:
     # "https://app.iscoolgpt.com",
