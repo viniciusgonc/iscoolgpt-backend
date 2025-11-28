@@ -4,6 +4,7 @@ import type { KeyboardEvent } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+
 import { askIsCoolGPT } from "./api/client";
 import type { ProviderOption, AggregatedResponse } from "./api/client";
 
@@ -182,18 +183,13 @@ function App() {
     <div className="h-screen flex flex-col bg-slate-950 text-slate-100">
       {/* Topbar */}
       <header className="border-b border-slate-800 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-sky-400 font-bold">
-            iG
-          </span>
-          <div className="flex flex-col">
-            <span className="font-semibold">IsCoolGPT</span>
-            <span className="text-xs text-slate-400">
-              Assistente para estudos de Cloud
-            </span>
-          </div>
+        <div className="flex flex-col gap-1">
+          <img
+            src="/IsCoolGPT.svg"
+            alt="IsCoolGPT Logo"
+            className="h-16 w-auto select-none"
+          />
         </div>
-
       </header>
 
       {/* Conteúdo principal */}
