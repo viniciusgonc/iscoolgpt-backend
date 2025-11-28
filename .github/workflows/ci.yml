@@ -3,6 +3,9 @@ name: CI/CD - IsCoolGPT Backend
 on:
   push:
     branches: [ "main" ]
+    paths-ignore:
+    - 'frontend/**'
+    - 'README.md'
   pull_request:
     branches: [ "main" ]
 

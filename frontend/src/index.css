@@ -4,8 +4,19 @@
 
 body {
   @apply bg-slate-950 text-slate-100 antialiased;
+  background: linear-gradient(to bottom, #020617, #0f172a);
 }
 
 #root {
   height: 100vh;
+}
+
+::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: none;
 }

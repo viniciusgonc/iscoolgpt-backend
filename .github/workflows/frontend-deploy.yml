@@ -1,0 +1,43 @@
+name: Deploy Frontend to S3
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'frontend/**'  # <--- CORRIGIDO: Monitora a pasta frontend na raiz
+
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # Instala e gera o build (HTML/JS)
+      - name: Install and Build
+        working-directory: ./frontend  # <--- CORRIGIDO: Entra na pasta certa
+        env:
+          # O build vai "queimar" o link do Load Balancer no código JS
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      # Pega o conteúdo da pasta 'dist' gerada e joga no S3
+      - name: Deploy to S3
+        working-directory: ./frontend # <--- CORRIGIDO
+        run: |
+          aws s3 sync dist/ s3://${{ secrets.AWS_S3_BUCKET }} --delete

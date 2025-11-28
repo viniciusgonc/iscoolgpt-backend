@@ -1,6 +1,9 @@
 import { useState } from "react";
 import type { KeyboardEvent } from "react";
 
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 import { askIsCoolGPT } from "./api/client";
 import type { ProviderOption, AggregatedResponse } from "./api/client";
 
@@ -88,7 +91,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+    <div className="h-screen flex flex-col bg-slate-950 text-slate-100">
       {/* Topbar */}
       <header className="border-b border-slate-800 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -109,7 +112,7 @@ function App() {
       </header>
 
       {/* Conteúdo principal */}
-      <main className="flex-1 flex flex-col max-w-4xl w-full mx-auto px-4 py-4 gap-4">
+      <main className="flex-1 flex flex-col max-w-5xl w-full mx-auto px-4 py-10 gap-10">
         {/* Seletor de providers */}
         <div className="flex gap-2 flex-wrap justify-center">
           {PROVIDERS.map((p) => (
@@ -137,7 +140,10 @@ function App() {
         )}
 
         {/* Área do chat */}
-        <div className="flex-1 overflow-auto rounded-2xl border border-slate-800 bg-slate-900/60 p-4 flex flex-col gap-3">
+        <div
+          className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 flex flex-col gap-3
+             h-[60vh] overflow-y-auto"
+>
           {messages.length === 0 && (
             <div className="text-center text-sm text-slate-500 mt-10">
               Comece perguntando algo como:
@@ -159,14 +165,36 @@ function App() {
                 <div className="flex flex-col gap-1 max-w-[80%]">
                   <div
                     className={`rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap
-                      ${
-                        isUser
-                          ? "bg-indigo-500 text-white rounded-br-sm"
-                          : "bg-slate-800 text-slate-100 rounded-bl-sm"
-                      }
+                      ${isUser ? "bg-indigo-500 text-white rounded-br-sm"
+                              : "bg-slate-800 text-slate-100 rounded-bl-sm"}
                     `}
                   >
-                    {m.content}
+                    {isUser ? (
+                      // usuário: texto bruto mesmo
+                      m.content
+                    ) : (
+                      // assistant: renderiza como markdown
+                      <ReactMarkdown
+                        // suporte a **negrito**, listas, tabelas, etc.
+                        remarkPlugins={[remarkGfm]}
+                        // estilinho simples pra ficar legível
+                        components={{
+                          p: (props) => <p className="mb-1 leading-relaxed" {...props} />,
+                          ul: (props) => <ul className="list-disc pl-5 mb-1" {...props} />,
+                          ol: (props) => <ol className="list-decimal pl-5 mb-1" {...props} />,
+                          li: (props) => <li className="mb-0.5" {...props} />,
+                          strong: (props) => <strong className="font-semibold" {...props} />,
+                          code: (props) => (
+                            <code
+                              className="rounded bg-slate-900/70 px-1 py-0.5 text-xs font-mono"
+                              {...props}
+                            />
+                          ),
+                        }}
+                      >
+                        {m.content}
+                      </ReactMarkdown>
+                    )}
                   </div>
 
                   {/* Detalhes do Fusion */}
@@ -216,7 +244,7 @@ function App() {
         </div>
 
         {/* Input */}
-        <div className="border border-slate-800 rounded-2xl bg-slate-900/80 p-3 flex flex-col gap-2">
+        <div className="border border-slate-800 rounded-2xl bg-slate-900/80 p-4 flex flex-col gap-3 w-full max-w-5xl mx-auto">
           <textarea
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
